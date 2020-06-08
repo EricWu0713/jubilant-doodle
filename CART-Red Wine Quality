@@ -1,0 +1,189 @@
+# This class is used for describe a specific wine.
+class Wine:
+    def __init__(self, variable_list):
+        self.variables = variable_list # Contains 11 variables and quality score.
+
+# index list(0,10)
+class Node:
+    def __init__(self, wine_list, measurement, measure_count=11, split=None, parent=None, left=None, right=None):
+        self.wine_list = wine_list # Contains multiple wines. 
+        self.impurity = self.impuri() # Gini impurity.
+        self.measurement = measurement # The rest of the measurements.
+        self.split = None # The shard value.
+        self.parent = parent
+        self.left = left
+        self.right = right
+        self.measure_count = measure_count # The amount of the measurements.
+        self.result = self.giveResult() # The result of the classification.
+    
+    # Calculate the current Gini impurity and return the value.
+    def impuri(self):
+        small_count = 0
+        for wine in self.wine_list:
+            if wine.variables[11] <= 6:
+                small_count += 1
+        if len(self.wine_list) != 0:
+            ratio = small_count / len(self.wine_list)
+            impu = 2 * ratio - 2 * (ratio ** 2)
+        else:
+            impu = 0
+        return impu
+
+    # Return True if the quality greater than 6, else return False.
+    def giveResult(self):
+        big_count = 0
+        small_count = 0
+        for wine in self.wine_list:
+            if wine.variables[11] > 6:
+                big_count += 1
+            else:
+                small_count += 1
+        if big_count > small_count:
+            return True
+        else:
+            return False
+
+# Change each line in the csv file into a list.
+def line_operation(line):
+    line = line.replace(' ', '')
+    line = line.replace('\n', '')
+    line = line.split(',')
+    return line
+
+# Extract value from train.csv and return a list.
+def data_extract(file_name):
+    wine_list = []
+    train_file = open(file_name, 'r')   
+    for line in train_file:
+        line = line_operation(line)
+        if line[11].isnumeric():
+            line = list(map(float, line))
+            wine = Wine(line) # Use class Wine to save data.
+            wine_list.append(wine)
+    return wine_list
+
+# The following two functions is used for creating a classification tree.
+# This function is used to find the best split point according to delta Gini impurity.
+def classification_splitting(node):
+    print('impurity', node.impurity)
+    wine_amount = len(node.wine_list)  
+
+    candi_delta = [] # The maximum delta Gini impurity of each measurement.
+    # delta: △-the amount of change.
+    candi_split_wine = [] # The index of the wine in candi_delta.
+
+    #Find out the maximum delta Gini impurity of each measurement, and the index of corresponding wine.
+    for index in range(len(node.measurement)):
+        if node.measurement[index] != None:
+            candi_delta_i = [] # Contains delta_impurity.
+            for wine in node.wine_list:
+                split = wine.variables[index]
+                small_list = []
+                big_list = []
+                for wn in node.wine_list:
+                    if wn.variables[index] <= split:
+                        small_list.append(wn)
+                    else:
+                        big_list.append(wn)
+                #s = len(bad_wine_list)
+                #b = len(good_wine_list)
+                small_node = Node(small_list, None)
+                big_node = Node(big_list, None)
+                delta_impurity = node.impurity - small_node.impurity * len(small_list) / wine_amount \
+                    - big_node.impurity * len(big_list) / wine_amount       #Calculate the delta impurity
+                #print('delta_impurity:', delta_impurity)
+                #print('small:', len(small_list))
+                #print('big', len(big_list))
+                candi_delta_i.append(delta_impurity)
+            candi_split_wine.append(candi_delta_i.index(max(candi_delta_i)))
+            candi_delta.append(max(candi_delta_i))
+            #print(max(candi_delta_i))
+        else:
+            candi_delta.append(0)
+            candi_split_wine.append(0)
+    max_delta = max(candi_delta)
+    print('max_delta', max_delta)
+    meas_num = candi_delta.index(max_delta)     # The index of the wine with maximum delta Gini impurity of each measurement
+    split_point = node.wine_list[candi_split_wine[meas_num]].variables[meas_num] 
+    return max_delta, meas_num, split_point
+
+# This function is to create the child node by the best splitting method, and prune during the process. 
+def classification_prunedChild(node):
+    # Assign values to the children nodes.
+    max_delta, meas_num, split_point = classification_splitting(node)
+    small_wine_list = []
+    big_wine_list = []
+
+    for wine in node.wine_list:
+        if wine.variables[meas_num] > split_point:
+            big_wine_list.append(wine)
+        else:
+            small_wine_list.append(wine)
+    print('small', len(small_wine_list))
+    print('big  ', len(big_wine_list))
+    parent_measurement = node.measurement
+    parent_measurement[meas_num] = None
+    children_measure_count = node.measure_count - 1
+    children_measurement = parent_measurement.copy() 
+    node.split = (meas_num, split_point)
+    #print('impurity:', node.impurity)
+
+    # Compare the max △Gini Impurity of parent node and child node.
+    # If it is smaller than the threshold (0.008), we give up producing the child node.
+    if (children_measure_count > 0) and (max_delta > 8*10**(-3)):     # Pruning according to the threshold
+        if len(small_wine_list) > 0:therethold
+            node.left = Node(small_wine_list, children_measurement, children_measure_count, None, node)#可改为二叉树方法
+            #print(children_measure_count)      
+            if len(small_wine_list) > 1:
+                classification_prunedChild(node.left)
+        if len(big_wine_list) > 0:          
+            node.right = Node(big_wine_list, children_measurement, children_measure_count, None, node)#可改为二叉树方法
+            #print(children_measure_count)      
+            if len(small_wine_list) > 1:
+                classification_prunedChild(node.right)
+
+# Test the accuracy rate of predictions.
+def testing(wine, node):
+    global correct_predictions
+
+    # The node has a left child and matches the pre-requisite of entering the left recursion.  
+    if node.left != None\
+    and wine.variables[node.split[0]] <= node.split[1]:
+        testing(wine,node.left)     # Entering the left recursion.
+
+    # The node has a right child and matches the pre-requisite of entering the right recursion.  
+    elif node.right != None\
+    and wine.variables[node.split[0]] > node.split[1]:
+        testing(wine,node.right)    # Entering the right recursion.
+
+    # The node has a child doesn't match the corresponding pre-requisite of it; or it has no child.
+    # That means it is the terminal node.
+    else:
+        # Justify if the prediction is correct.
+        # (compare the realist quality and the predicted one).
+        if (wine.variables[11] > 6 and node.result == True)\
+        or (wine.variables[11] <= 6 and node.result == False):      # Correct prediction
+            correct_predictions += 1  
+
+    accuracy = float(correct_predictions / number_of_samples)       # Calculate the accuracy
+    #print('Accuracy =', accuracy)
+
+# The main loop
+if __name__ == "__main__":
+
+    train_file = 'src/train.csv'
+    test_file = 'src/test.csv'
+    train_wines = data_extract(train_file)
+    test_wines = data_extract(test_file)
+    number_of_samples = len(test_wines)
+    meas_list = [1] * 11
+
+    root = Node(train_wines, meas_list, 11)
+    classification_prunedChild(root)
+    correct_predictions = 0
+    for wine in test_wines:
+        testing(wine, root)
+
+    # Print the final results
+    print('----------Congratulations!!!!!!---------')
+    print('The final accuracy is',correct_predictions/number_of_samples)
